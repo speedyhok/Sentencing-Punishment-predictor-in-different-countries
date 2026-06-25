@@ -220,10 +220,12 @@ def predict():
         "embedding_snippet": [round(float(x), 5) for x in embedding[0][:8]]
     })
 
+# Initialize models at module import time for production WSGI compatibility (Gunicorn)
+try:
+    init_models()
+except Exception as e:
+    print(f"Warning: Models could not be loaded on startup: {e}")
+
 if __name__ == "__main__":
-    try:
-        init_models()
-    except Exception as e:
-        print(f"Warning: Models could not be loaded on startup: {e}")
-        
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=False)
