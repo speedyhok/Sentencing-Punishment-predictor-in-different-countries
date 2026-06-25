@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Sentencing Proportionality Drift Auditor</title>
+    <!-- Google Fonts: Inter & Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="main-header">
+            <div class="header-top">
+                <div class="logo-area">
+                    <span class="logo-glow"></span>
+                    <h1 class="app-title">GLOBAL SENTENCING AUDITOR</h1>
+                    <span class="badge">PROPORTIONALITY DRIFT AUDITOR</span>
+                </div>
+                <button id="theme-toggle" class="theme-toggle-btn" aria-label="Toggle Theme" title="Toggle Light/Dark Theme">
+                    <span class="theme-toggle-icon">☀️</span>
+                </button>
+            </div>
+            <p class="subtitle">An ML-driven auditing tool to compare consistency and measure severity-normalized punishment drift across 20 representative jurisdictions.</p>
+        </header>
+
+        <!-- Main Layout Grid -->
+        <main class="dashboard-grid">
+            
+            <!-- Left Panel: Input Scenario -->
+            <section class="card input-card">
+                <div class="card-header">
+                    <h2><span class="icon">⚖️</span> Case Parameters</h2>
+                    <p class="card-subtitle">Input crime facts and legal factors to run the multi-model pipeline.</p>
+                </div>
+                <form id="audit-form" class="audit-form">
+                    <div class="form-group">
+                        <label for="fact-pattern">Crime Fact Pattern (Text Narrative)</label>
+                        <div class="textarea-container">
+                            <textarea id="fact-pattern" name="fact_pattern" placeholder="Describe the case details here... E.g., 'The suspect planned the heist for over six months, purchasing specialized tools and mapping the security routes. During the incident, the offender pointed a handgun at the cashier, demanding $15,000 before escaping in a getaway car.'" required minlength="10"></textarea>
+                            <div class="textarea-suggestions">
+                                <span class="suggestion-tag" data-text="The offender broke into an elderly woman's home at night, threatened her with a pocket knife, and stole $200 worth of silver jewelry before fleeing.">Elderly Burglary</span>
+                                <span class="suggestion-tag" data-text="An employee embezzled $150,000 from the local charity accounts where they worked as an accountant, exploiting their access over a two-year period.">Charity Embezzlement</span>
+                                <span class="suggestion-tag" data-text="The defendant was stopped at the border attempting to smuggle 2 kilograms of heroin hidden in the false bottom of a shipping container.">Drug Trafficking</span>
+                                <span class="suggestion-tag" data-text="The suspect spontaneously engaged in a bar fight, punching the victim repeatedly in a fit of rage, which led to a severe head injury.">Bar Assault</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="legal-factors-grid">
+                        <div class="form-group slider-group">
+                            <label for="priors">Prior Offenses: <span id="priors-val">0</span></label>
+                            <input type="range" id="priors" name="priors" min="0" max="5" value="0" step="1">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Legal & Jurisdictional Circumstances</label>
+                            <div class="toggles-list">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="plea-guilty" name="plea_guilty">
+                                    <span class="slider round"></span>
+                                    <span class="toggle-label">Early Guilty Plea / Confession</span>
+                                </label>
+                                
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="mitigating" name="mitigating_circumstances">
+                                    <span class="slider round"></span>
+                                    <span class="toggle-label">Mitigating Circumstances</span>
+                                </label>
+                                
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="juvenile" name="juvenile">
+                                    <span class="slider round"></span>
+                                    <span class="toggle-label">Offender is Juvenile (Minor)</span>
+                                </label>
+
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="court-region" name="court_region">
+                                    <span class="slider round"></span>
+                                    <span class="toggle-label">Metropolitan Court Location (vs. Rural)</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="divider"></div>
+
+                    <!-- Optional Actual Sentence Input for Within-Jurisdiction Drift -->
+                    <div class="form-group actual-sentence-group">
+                        <label for="actual-sentence">Actual Imposed Sentence (Optional)</label>
+                        <p class="field-desc">Used to score Within-Jurisdiction Consistency (using empirical residual quantile boundaries for the country).</p>
+                        <div class="input-with-select">
+                            <input type="number" id="actual-sentence" name="actual_sentence" min="0" placeholder="e.g. 36" step="0.1">
+                            <span class="input-suffix">Months</span>
+                            <select id="selected-audit-country">
+                                <option value="" disabled selected>Select country to audit...</option>
+                                <option value="United States">United States</option>
+                                <option value="United Kingdom">United Kingdom</option>
+                                <option value="Germany">Germany</option>
+                                <option value="Norway">Norway</option>
+                                <option value="Singapore">Singapore</option>
+                                <option value="Japan">Japan</option>
+                                <option value="South Africa">South Africa</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button type="submit" id="submit-btn" class="btn btn-primary">
+                        <span class="btn-text">Run Multilateral Audit</span>
+                        <span class="spinner hidden"></span>
+                    </button>
+                </form>
+            </section>
+
+            <!-- Right Panel: Results & Analytics -->
+            <section id="results-panel" class="results-container placeholder-state">
+                <div class="panel-placeholder">
+                    <div class="placeholder-icon">⚖️</div>
+                    <h3>Awaiting Case Fact Analysis</h3>
+                    <p>Enter a fact pattern description and legal parameters on the left, then click "Run Multilateral Audit" to visualize the continuous severity embedding, predicted sentences, and anomaly scores.</p>
+                </div>
+
+                <div class="panel-content hidden">
+                    <!-- Top section: NLP Severity and Drift Gauges -->
+                    <div class="results-top-row">
+                        <!-- Card 1: 5D Severity Profile -->
+                        <div class="card severity-card">
+                            <div class="card-header">
+                                <h3>🧠 NLP Harm Severity Embedding</h3>
+                                <p class="card-subtitle">Severity scores extracted directly from the narrative text, independent of legal codes.</p>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="severity-chart"></canvas>
+                            </div>
+                            <div class="severity-bars">
+                                <div class="severity-bar-item">
+                                    <div class="bar-label"><span>Violence</span><span id="score-violence">0.0</span></div>
+                                    <div class="bar-track"><div id="bar-violence" class="bar-fill color-violence" style="width: 0%"></div></div>
+                                </div>
+                                <div class="severity-bar-item">
+                                    <div class="bar-label"><span>Property Loss</span><span id="score-financial">0.0</span></div>
+                                    <div class="bar-track"><div id="bar-financial" class="bar-fill color-financial" style="width: 0%"></div></div>
+                                </div>
+                                <div class="severity-bar-item">
+                                    <div class="bar-label"><span>Victim Vulnerability</span><span id="score-vulnerability">0.0</span></div>
+                                    <div class="bar-track"><div id="bar-vulnerability" class="bar-fill color-vulnerability" style="width: 0%"></div></div>
+                                </div>
+                                <div class="severity-bar-item">
+                                    <div class="bar-label"><span>Premeditation</span><span id="score-premeditation">0.0</span></div>
+                                    <div class="bar-track"><div id="bar-premeditation" class="bar-fill color-premeditation" style="width: 0%"></div></div>
+                                </div>
+                                <div class="severity-bar-item">
+                                    <div class="bar-label"><span>Public Safety Risk</span><span id="score-safety">0.0</span></div>
+                                    <div class="bar-track"><div id="bar-safety" class="bar-fill color-safety" style="width: 0%"></div></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card 2: Consistency & Drift Gauges -->
+                        <div class="card drift-card">
+                            <div class="card-header">
+                                <h3>📊 Proportionality Drift Index</h3>
+                                <p class="card-subtitle">Consistency scores and divergence indicators for this specific scenario.</p>
+                            </div>
+                            
+                            <div class="drift-gauges-container">
+                                <!-- Within-Jurisdiction Drift -->
+                                <div class="drift-gauge-box" id="within-drift-box">
+                                    <h4 class="gauge-title">Within-Jurisdiction Consistency</h4>
+                                    <div class="gauge-display">
+                                        <div class="gauge-value" id="within-drift-val">-</div>
+                                        <div class="gauge-label" id="within-drift-status">No Sentence Input</div>
+                                    </div>
+                                    <p class="gauge-desc">Checks if the actual sentence falls within the country's empirical 90% or 95% model residuals (quantile boundaries).</p>
+                                </div>
+
+                                <!-- Cross-Jurisdiction Drift -->
+                                <div class="drift-gauge-box" id="cross-drift-box">
+                                    <h4 class="gauge-title">Cross-Jurisdiction Proportionality</h4>
+                                    <div class="gauge-display">
+                                        <div class="gauge-value" id="cross-drift-val">-</div>
+                                        <div class="gauge-label" id="cross-drift-status">Divergence Index</div>
+                                    </div>
+                                    <p class="gauge-desc">Measures how much the selected country's expectation differs from the reference median for this harm level.</p>
+                                </div>
+                            </div>
+                            
+                            <div class="global-stats-card">
+                                <span class="stats-label">Normalized Reference Median:</span>
+                                <span class="stats-value" id="global-median-val">0.0 months</span>
+                            </div>
+                    </div>
+
+                    <!-- ML Pipeline Inference Trace Card -->
+                    <div class="card ml-insights-card">
+                        <div class="card-header">
+                            <h3>🔍 ML Pipeline Inference Trace</h3>
+                            <p class="card-subtitle">Real-time inspection of the active machine learning steps for this input.</p>
+                        </div>
+                        <div class="insights-grid">
+                            <div class="insight-box">
+                                <h4 class="insight-title">Model 1: NLP Transformer Embedding</h4>
+                                <p class="insight-desc">Text is converted into a 384D semantic vector by all-MiniLM-L6-v2.</p>
+                                <div class="insight-data-wrapper">
+                                    <span class="insight-meta">First 8 dimensions of 384D vector:</span>
+                                    <pre id="ml-vector-display" class="insight-code">Awaiting audit submit...</pre>
+                                </div>
+                            </div>
+                            <div class="insight-box">
+                                <h4 class="insight-title">Model 2: GBDT Classifier Features</h4>
+                                <p class="insight-desc">The 5 severity predictions + 5 case factors are fed into GBDT forests.</p>
+                                <div class="insight-data-wrapper">
+                                    <span class="insight-meta">10-Feature Vector input [x0 ... x9]:</span>
+                                    <pre id="ml-features-display" class="insight-code">Awaiting audit submit...</pre>
+                                </div>
+                            </div>
+                            <div class="insight-box">
+                                <h4 class="insight-title">Model 3: Typology PCA Coordinates</h4>
+                                <p class="insight-desc">Functional clustering and PCA coordinate mapping for audited country.</p>
+                                <div class="insight-data-wrapper">
+                                    <span class="insight-meta">PCA coordinates (x, y) & cluster:</span>
+                                    <pre id="ml-cluster-display" class="insight-code">Awaiting audit submit...</pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Middle section: Global sentencing bar chart -->
+                    <div class="card sentence-chart-card">
+                        <div class="card-header">
+                            <h3>🌍 Expected Sentences Across Jurisdictions</h3>
+                            <p class="card-subtitle">Expected sentence length in months based on each legal system's trained response curve.</p>
+                        </div>
+                        <div class="bar-chart-container">
+                            <canvas id="sentences-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Typology Map Section -->
+        <section class="card typology-card">
+            <div class="card-header flex-header">
+                <div>
+                    <h2><span class="icon">🗺️</span> Sentencing Typology Map</h2>
+                    <p class="card-subtitle">ML-discovered groupings of legal systems based on functional similarity in sentence response curves. Click on countries to explore.</p>
+                </div>
+                <div class="typology-legend" id="typology-legend-container">
+                    <!-- Legend generated dynamically in JS based on optimal K -->
+                </div>
+            </div>
+            <div class="typology-grid">
+                <div class="typology-chart-container">
+                    <canvas id="typology-map"></canvas>
+                </div>
+                <div class="typology-details" id="typology-details-panel">
+                    <div class="empty-detail-state">
+                        <p>Click on any country dot in the map to load its legal culture profile and expected response curve details.</p>
+                    </div>
+                    <div class="detail-content hidden">
+                        <h3 id="detail-country-name">Country</h3>
+                        <div class="detail-badges">
+                            <span id="detail-legal-family" class="detail-badge">Common Law</span>
+                            <span id="detail-region" class="detail-badge">Europe</span>
+                        </div>
+                        
+                        <div class="divider"></div>
+                        
+                        <div class="detail-cluster-info">
+                            <span class="cluster-pill" id="detail-cluster-pill">Cluster</span>
+                            <p id="detail-cluster-desc" class="cluster-desc">Description of the cluster</p>
+                        </div>
+                        
+                        <div class="divider"></div>
+                        
+                        <div class="detail-guideline-info">
+                            <h4>Legal Culture Profile:</h4>
+                            <p id="detail-country-desc">Description of the country's sentencing culture.</p>
+                        </div>
+                        
+                        <div class="detail-prediction-box hidden" id="detail-current-pred-box">
+                            <div class="divider"></div>
+                            <h4>Current Case Analysis:</h4>
+                            <div class="detail-pred-grid">
+                                <div class="pred-item">
+                                    <span class="pred-label">Expected Sentence:</span>
+                                    <span class="pred-value" id="detail-pred-sentence">0.0 months</span>
+                                </div>
+                                <div class="pred-item">
+                                    <span class="pred-label">vs. Reference Median:</span>
+                                    <span class="pred-value" id="detail-pred-drift">0.0%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer Normative Auditor Framework Explanation -->
+        <footer class="main-footer card">
+            <h3>⚖️ Normative Auditing Framework</h3>
+            <p>
+                This auditor implements a <strong>consistency and divergence model</strong>. It is explicitly designed not to propose a moral baseline, define "the correct punishment," or pass ethical judgment on any legal tradition. 
+                Instead, the system utilizes a <strong>severity-invariant harm embedding</strong> to map crime descriptions into a unified vector space, allowing for direct comparison of sentence scaling behaviors across 20 representative jurisdictions. 
+                By measuring relative deviations from the **Reference Median (20 Jurisdictions)**, this system highlights systemic outliers (Within-Jurisdiction Drift) and legal-cultural divergences (Cross-Jurisdiction Drift), maintaining a defensible and transparent stance centered on empirical auditing.
+            </p>
+            <p class="copyright">&copy; 2026 Global Sentencing Auditor Project. Advanced Legal Informatics Initiative.</p>
+        </footer>
+    </div>
+
+    <footer style="text-align: center; margin-top: 50px; margin-bottom: 30px; color: #888; font-size: 0.85rem;">
+        <p>© 2026 Global Sentencing Proportionality Drift Auditor. Built by <strong>Mohibul Hoque</strong> (<a href="https://github.com/speedyhok" target="_blank" style="color: #a5b4fc; text-decoration: none;">GitHub</a> | <a href="https://linkedin.com/in/speedymohibul" target="_blank" style="color: #a5b4fc; text-decoration: none;">LinkedIn</a> | <a href="mailto:hokworks@gmail.com" style="color: #a5b4fc; text-decoration: none;">hokworks@gmail.com</a>).</p>
+    </footer>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
