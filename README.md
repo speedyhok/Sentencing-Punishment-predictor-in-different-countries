@@ -4,6 +4,7 @@ An advanced machine learning-driven compliance and auditing platform built to mo
 
 **Author:** Mohibul Hoque (<hokworks@gmail.com>) | [GitHub](https://github.com/speedyhok) | [LinkedIn](https://linkedin.com/in/speedymohibul)  
 **System:** Flask / Sentence-Transformers / GBDT Pipeline  
+**Link of the live website:** https://sentencing-punishment-predictor-in-sp47.onrender.com
 
 ---
 
